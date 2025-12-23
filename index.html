@@ -26,7 +26,7 @@
     .grid{
       display:grid;
       grid-template-columns: 1.2fr 1.2fr 1.2fr 1.2fr auto;
-      gap:24px;           /* ⬅️ مسافة أكبر */
+      gap:24px;
       align-items:end;
     }
     @media (max-width: 900px){
@@ -37,7 +37,7 @@
       display:block;
       font-size:14px;
       color:#222;
-      margin-bottom:10px; /* ⬅️ مسافة أوضح بين العنوان والحقل */
+      margin-bottom:10px;
     }
 
     input, button{
@@ -76,6 +76,50 @@
     table{ width:100%; border-collapse:collapse; }
     th, td{ border-bottom:1px solid #eee; padding:10px; text-align:right; }
     th{ background:#fafafa; font-weight:700; }
+
+    /* ===== التذييل في الواجهة (✅ حجم 11) ===== */
+    .print-footer{
+      font-size:11px;      /* ✅ طلبك */
+      color:#ccc;          /* رمادي فاتح */
+      opacity:0.6;         /* كأنه مخفي */
+      text-align:center;
+      margin-top:24px;
+    }
+
+    /* ===== الطباعة / PDF ===== */
+    @media print {
+      @page { size: A4; margin: 12mm; }
+
+      body{ margin:0; background:#fff; }
+      .wrap{ max-width:none; }
+
+      /* إخفاء عناصر الإدخال والأزرار وسطر القاعدة */
+      .grid, .tools, #ruleLine { display:none !important; }
+
+      /* إزالة شكل الكروت للطباعة النظيفة */
+      .card{ border:none; padding:0; margin:0 0 14px 0; background:transparent; }
+
+      h1{ font-size:20px; margin-bottom:8px; }
+
+      table{ font-size:12px; }
+      th, td{ padding:8px; }
+
+      th{
+        background:#f2f2f2 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      tr{ page-break-inside: avoid; }
+
+      /* التذييل في الطباعة أوضح */
+      .print-footer{
+        font-size:9px;
+        color:#666;
+        opacity:1;
+        margin-top:18px;
+      }
+    }
   </style>
 </head>
 
@@ -111,12 +155,12 @@
         </div>
       </div>
 
-      <!-- ✅ ترتيب الأزرار كما طلبت -->
       <div class="tools">
         <button class="btn2" id="export">تصدير CSV</button>
         <button class="btn2" id="backup">حفظ نسخة</button>
         <button class="btn2" id="restoreBtn">استيراد نسخة</button>
         <input id="restoreFile" type="file" accept="application/json" style="display:none" />
+        <button class="btn2" id="print">طباعة / PDF</button>
         <button class="danger" id="clear">مسح بيانات الشهر</button>
       </div>
     </div>
@@ -124,7 +168,6 @@
     <div class="card">
       <div class="kpis">
         <div class="kpi">
-          <!-- ✅ تعديل العنوان -->
           <div class="muted">إجمالي ساعات التأخير</div>
           <div class="v" id="totalHM">00:00</div>
         </div>
@@ -140,7 +183,6 @@
         </div>
 
         <div class="kpi">
-          <!-- ✅ كل 7 ساعات = يوم -->
           <div class="muted">عدد أيام التأخير في الخصم (كل 7 ساعات = يوم)</div>
           <div class="v" id="lateDaysByHours">0</div>
         </div>
@@ -163,13 +205,9 @@
       </table>
     </div>
 
-    <div class="muted">
-      مراجع تقنية (MDN):  
-      https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/time  
-      https://developer.mozilla.org/en-US/docs/Web/HTML/Element/input/month  
-      https://developer.mozilla.org/en-US/docs/Web/API/Window/localStorage  
-      https://developer.mozilla.org/en-US/docs/Web/API/Blob  
-      https://developer.mozilla.org/en-US/docs/Web/API/FileReader
+    <!-- ✅ التذييل -->
+    <div class="print-footer">
+      تصميم وإنشاء: م. فواز قادري
     </div>
   </div>
 
@@ -220,7 +258,7 @@
       return String(h).padStart(2,"0") + ":" + String(m).padStart(2,"0");
     }
 
-    // ===== قواعد التأخير مع بداية دوام مرنة =====
+    // ===== قواعد التأخير =====
     // - إذا arrival <= start => 0
     // - إذا start < arrival <= start+30 => 30 دقيقة ثابتة
     // - إذا arrival >= start+31 => الفرق الحقيقي بالدقائق
@@ -256,7 +294,7 @@
       let sum = 0;      // مجموع دقائق التأخير
       let lateDays = 0; // عدد الأيام التي بها تأخير > 0
 
-      rows.forEach((r, idx) => {
+      rows.forEach((r) => {
         const late = calcLateMinutes(r.arrival, r.start);
         sum += late;
         if (late > 0) lateDays++;
@@ -268,12 +306,12 @@
           <td>${r.start}</td>
           <td>${late}</td>
           <td>${toHM(late)}</td>
-          <td><button class="btn2" data-del="${idx}">حذف</button></td>
+          <td><button class="btn2" data-del="${r.date}">حذف</button></td>
         `;
         tbody.appendChild(tr);
       });
 
-      // ✅ كل 7 ساعات = يوم تأخير
+      // كل 7 ساعات = يوم خصم
       const DAYS_UNIT_HOURS = 7;
       const daysByHours = Math.floor((sum / 60) / DAYS_UNIT_HOURS);
 
@@ -329,6 +367,7 @@
       const rows = loadRows();
       const payload = { date, arrival, start };
 
+      // تحديث نفس اليوم إن وجد
       const i = rows.findIndex(x => x.date === date);
       if (i >= 0) rows[i] = payload;
       else rows.push(payload);
@@ -337,14 +376,13 @@
       render();
     });
 
-    // ===== حذف سجل (مفعل) =====
+    // ===== حذف سجل =====
     tbody.addEventListener("click", (e) => {
       const btn = e.target.closest("button[data-del]");
       if (!btn) return;
-      const idx = Number(btn.getAttribute("data-del"));
+      const day = btn.getAttribute("data-del");
 
-      const rows = loadRows().sort((a,b)=> a.date.localeCompare(b.date));
-      rows.splice(idx, 1);
+      const rows = loadRows().filter(r => r.date !== day);
       saveRows(rows);
       render();
     });
@@ -388,6 +426,11 @@
       a.click();
       a.remove();
       URL.revokeObjectURL(url);
+    });
+
+    // ===== طباعة / PDF =====
+    document.getElementById("print").addEventListener("click", () => {
+      window.print();
     });
 
     // ===== حفظ نسخة (JSON) / استيراد نسخة (JSON) =====
