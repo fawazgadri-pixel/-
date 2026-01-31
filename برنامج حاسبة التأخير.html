@@ -1,0 +1,740 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>حاسبة تأخير الدوام (شهريًا)</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --panel:#f1f1f1;
+      --card:#ffffff;
+      --ink:#0f0f0f;
+      --muted:#6b6b6b;
+      --shadow: 0 4px 14px rgba(0,0,0,0.06);
+      --r16:16px;
+      --r18:18px;
+      --r14:14px;
+      --red:#e20b2e;
+      --darkbtn:#5b5b5b;
+      --line:#8e8e8e;
+    }
+
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background:var(--bg);
+      color:var(--ink);
+    }
+
+    .wrap{ max-width:980px; margin:22px auto 60px; padding:0 18px; }
+
+    .topbar{
+      background:#000;
+      color:#fff;
+      border-radius:var(--r18);
+      padding:18px 22px;
+      text-align:center;
+      font-weight:900;
+      font-size:22px;
+      box-shadow:var(--shadow);
+      margin-bottom:18px;
+    }
+
+    .panel{
+      background:var(--panel);
+      border-radius:var(--r18);
+      padding:18px;
+      box-shadow:var(--shadow);
+      margin-bottom:16px;
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:18px;
+      align-items:end;
+    }
+
+    .field label{
+      display:flex;
+      justify-content:space-between;
+      font-size:13px;
+      font-weight:800;
+      color:#222;
+      margin-bottom:10px;
+    }
+
+    .box{
+      background:var(--card);
+      border-radius:var(--r16);
+      padding:14px 16px;
+      min-height:54px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    .display-btn{
+      all:unset;
+      width:100%;
+      text-align:center;
+      font-size:14px;
+      font-weight:800;
+      cursor:pointer;
+      color:#111;
+    }
+
+    /* Red highlight for arrival display (as in your reference) */
+    .box.red{
+      background:var(--red);
+      box-shadow: 0 2px 12px rgba(226,11,46,0.25);
+    }
+    .box.red .display-btn{
+      color:#000; /* reference shows dark text on red */
+      font-weight:900;
+    }
+
+    /* Hidden native pickers to preserve design */
+    .native-hidden{
+      position:absolute;
+      opacity:0;
+      pointer-events:none;
+      width:1px;height:1px;
+    }
+
+    .btn-main{
+      width:100%;
+      background:var(--darkbtn);
+      color:#fff;
+      border:0;
+      border-radius:var(--r14);
+      padding:16px 14px;
+      font-weight:900;
+      cursor:pointer;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+    }
+
+    /* Permission: two small boxes */
+    .perm-row{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:18px;
+    }
+    .perm-row .box{
+      min-height:50px;
+      padding:12px 14px;
+    }
+    .perm-input{
+      all:unset;
+      width:100%;
+      text-align:center;
+      font-size:13px;
+      font-weight:800;
+      color:#666;
+    }
+    .perm-input::placeholder{ color:#9a9a9a; font-weight:800; }
+
+    /* KPIs */
+    .kpis{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:14px;
+    }
+    .kpi{
+      background:#fff;
+      border-radius:var(--r18);
+      padding:16px 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      text-align:center;
+    }
+    .kpi .t{ font-size:12.5px; font-weight:900; color:#222; line-height:1.25; }
+    .kpi .v{ margin-top:12px; font-size:26px; font-weight:950; }
+
+    /* Bottom actions */
+    .actions{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:14px;
+    }
+    .btn{
+      background:#fff;
+      border:0;
+      border-radius:var(--r16);
+      padding:14px 12px;
+      cursor:pointer;
+      font-weight:900;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+
+    /* Table (bordered like reference) */
+    .table-wrap{ padding:0; background:transparent; box-shadow:none; }
+    table{
+      width:100%;
+      border-collapse:collapse;
+      background:#fff;
+      border:1.5px solid var(--line);
+    }
+    thead th{
+      font-size:12.5px;
+      font-weight:950;
+      padding:12px 10px;
+      border-bottom:1.5px solid var(--line);
+      border-left:1.5px solid var(--line);
+      text-align:center;
+      white-space:nowrap;
+    }
+    thead th:last-child{ border-left:0; }
+    tbody td{
+      font-size:12.5px;
+      font-weight:800;
+      padding:12px 10px;
+      border-top:1.5px solid var(--line);
+      border-left:1.5px solid var(--line);
+      text-align:center;
+      white-space:nowrap;
+    }
+    tbody td:last-child{ border-left:0; }
+
+    .cell-actions{
+      display:flex;
+      gap:10px;
+      justify-content:center;
+    }
+    .mini-btn{
+      background:transparent;
+      border:0;
+      cursor:pointer;
+      font-weight:900;
+      color:#222;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px){
+      .kpis{ grid-template-columns:1fr 1fr; }
+    }
+    @media (max-width: 700px){
+      .grid2{ grid-template-columns:1fr; }
+      .actions{ grid-template-columns:1fr 1fr; }
+      .kpis{ grid-template-columns:1fr; }
+    }
+
+    /* Print */
+    @media print{
+      @page { size:A4; margin: 12mm; }
+      .entry-panel, .actions-panel{ display:none !important; }
+      .wrap{ max-width:none; margin:0; padding:0; }
+      .panel{ box-shadow:none; }
+      .topbar{ border-radius:0; }
+      .print-footer{ display:block !important; margin-top:14px; text-align:center; font-size:9px; color:#bbb; }
+    }
+    .print-footer{ display:none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">حاسبة تأخير الدوام (شهريًا)</div>
+
+    <!-- Entry -->
+    <div class="panel entry-panel">
+      <div class="grid2">
+        <!-- month/year (right) -->
+        <div class="field">
+          <label>الشهر/السنة</label>
+          <div class="box">
+            <button class="display-btn" id="monthDisplay" type="button"></button>
+            <input id="month" class="native-hidden" type="month" />
+          </div>
+        </div>
+
+        <!-- base (left) -->
+        <div class="field">
+          <label>بداية الدوام (المرن)</label>
+          <div class="box">
+            <button class="display-btn" id="baseDisplay" type="button"></button>
+            <input id="baseStartTime" class="native-hidden" type="time" step="60" />
+          </div>
+        </div>
+
+        <!-- date (right) -->
+        <div class="field">
+          <label>التاريخ</label>
+          <div class="box">
+            <button class="display-btn" id="dateDisplay" type="button"></button>
+            <input id="date" class="native-hidden" type="date" />
+          </div>
+        </div>
+
+        <!-- arrival (left) RED -->
+        <div class="field">
+          <label>بصمة الدخول</label>
+          <div class="box red">
+            <button class="display-btn" id="arrivalDisplay" type="button"></button>
+            <input id="arrival" class="native-hidden" type="time" step="60" />
+          </div>
+        </div>
+
+        <!-- day (right) -->
+        <div class="field">
+          <label>اليوم</label>
+          <div class="box" id="dayName">—</div>
+        </div>
+
+        <!-- permission (left) -->
+        <div class="field">
+          <label style="justify-content:center">مدة الاستئذان</label>
+          <div class="perm-row">
+            <div class="box">
+              <input id="permH" class="perm-input" type="number" min="0" step="1" inputmode="numeric" placeholder="ساعات" />
+            </div>
+            <div class="box">
+              <input id="permM" class="perm-input" type="number" min="0" max="59" step="1" inputmode="numeric" placeholder="دقائق" />
+            </div>
+          </div>
+        </div>
+
+        <div class="field" style="grid-column:1 / -1; margin-top:4px;">
+          <button class="btn-main" id="add">تعديل/إضافة</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPIs -->
+    <div class="panel">
+      <div class="kpis">
+        <div class="kpi">
+          <div class="t">عدد أيام التأخير في الخصم<br>(كل 7 ساعات = يوم)</div>
+          <div class="v" id="lateDaysByHours">0</div>
+        </div>
+        <div class="kpi">
+          <div class="t">عدد أيام التأخير</div>
+          <div class="v" id="lateDays">0</div>
+        </div>
+        <div class="kpi">
+          <div class="t">إجمالي التأخير بالدقائق</div>
+          <div class="v" id="totalMin">0</div>
+        </div>
+        <div class="kpi">
+          <div class="t">إجمالي ساعات التأخير</div>
+          <div class="v" id="totalHM">00:00</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="panel actions-panel">
+      <div class="actions">
+        <button class="btn" id="print">طباعة / PDF</button>
+        <button class="btn" id="restoreBtn">استيراد نسخة</button>
+        <button class="btn" id="backup">حفظ نسخة</button>
+        <button class="btn" id="export">تصدير CSV</button>
+        <input id="restoreFile" type="file" accept="application/json" style="display:none" />
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="panel table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>التاريخ</th>
+            <th>اليوم</th>
+            <th>بصمة الدخول</th>
+            <th>التأخير (وقت)</th>
+            <th>التأخير (د)</th>
+            <th>استئذان (س)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="print-footer">تصميم وإنشاء: م. فواز قادري</div>
+  </div>
+
+<script>
+  // ===== مفاتيح التخزين =====
+  const GLOBAL_BASE_KEY = "latecalc:baseStartTime";
+  const GLOBAL_FLEX_KEY = "latecalc:flexEndTime"; // ثابت 10:00
+  function monthKey(ym){ return "latecalc:rows:" + ym; }
+
+  // ===== عناصر =====
+  const monthEl = document.getElementById("month");
+  const dateEl = document.getElementById("date");
+  const arrivalEl = document.getElementById("arrival");
+  const baseEl = document.getElementById("baseStartTime");
+
+  const monthDisplay = document.getElementById("monthDisplay");
+  const dateDisplay  = document.getElementById("dateDisplay");
+  const arrivalDisplay = document.getElementById("arrivalDisplay");
+  const baseDisplay = document.getElementById("baseDisplay");
+  const dayNameBox = document.getElementById("dayName");
+
+  const permH = document.getElementById("permH");
+  const permM = document.getElementById("permM");
+
+  const tbody = document.getElementById("tbody");
+  const totalHMEl = document.getElementById("totalHM");
+  const totalMinEl = document.getElementById("totalMin");
+  const lateDaysEl = document.getElementById("lateDays");
+  const lateDaysByHoursEl = document.getElementById("lateDaysByHours");
+
+  // ===== وقت/تنسيق =====
+  function pad2(n){ return String(n).padStart(2,"0"); }
+  function toMinutes(hhmm){
+    if (!hhmm) return 0;
+    const [h,m] = hhmm.split(":").map(Number);
+    return h*60 + m;
+  }
+  function toHM(totalMinutes){
+    const h = Math.floor(totalMinutes/60);
+    const m = totalMinutes % 60;
+    return pad2(h) + ":" + pad2(m);
+  }
+  function formatTimeAMPM(hhmm){
+    if (!hhmm) return "—";
+    const [h,m] = hhmm.split(":").map(Number);
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hh = ((h + 11) % 12) + 1;
+    return `${hh}:${pad2(m)} ${ampm}`;
+  }
+  function formatMonthText(ym){
+    if (!ym) return "—";
+    const [y, mo] = ym.split("-").map(Number);
+    const d = new Date(y, mo-1, 1);
+    const monthName = d.toLocaleString("en-US", { month: "long" });
+    return `${monthName} ${y}`;
+  }
+  function formatDateDMY(ymd){
+    if (!ymd) return "—";
+    const [y,m,d] = ymd.split("-").map(Number);
+    return `${pad2(d)}/${pad2(m)}/${y}`;
+  }
+  function arabicDayName(ymd){
+    if (!ymd) return "—";
+    const d = new Date(ymd + "T00:00:00");
+    const names = ["الأحد","الاثنين","الثلاثاء","الأربعاء","الخميس","الجمعة","السبت"];
+    return isNaN(d.getTime()) ? "—" : names[d.getDay()];
+  }
+
+  // ===== تخزين/تحميل =====
+  function getYM(){ return monthEl.value; }
+  function loadRows(){
+    const raw = localStorage.getItem(monthKey(getYM()));
+    try { return raw ? JSON.parse(raw) : []; } catch { return []; }
+  }
+  function saveRows(rows){
+    localStorage.setItem(monthKey(getYM()), JSON.stringify(rows));
+  }
+
+  // ===== منطق التأخير =====
+  function flexEndMinutes(){
+    const v = localStorage.getItem(GLOBAL_FLEX_KEY) || "10:00";
+    return toMinutes(v);
+  }
+  // arrival <= 10:00 => 0
+  // arrival > 10:00:
+  //  - بدون استئذان => التأخير = arrival - base(09:30)
+  //  - مع استئذان مدة => التأخير = max(0, arrival - (10:00 + المدة))
+  function calcLateMinutes(arrivalHHMM, baseHHMM, permDurationMin){
+    const arr = toMinutes(arrivalHHMM);
+    const base = toMinutes(baseHHMM);
+    const flexEnd = flexEndMinutes();
+    if (arr <= flexEnd) return 0;
+
+    const perm = Math.max(0, permDurationMin || 0);
+    if (perm > 0){
+      const threshold = flexEnd + perm;
+      return Math.max(0, arr - threshold);
+    }
+    return Math.max(0, arr - base);
+  }
+
+  function permDurationMinutes(){
+    const h = permH.value === "" ? 0 : Number(permH.value);
+    const m = permM.value === "" ? 0 : Number(permM.value);
+    const hh = isFinite(h) && h > 0 ? Math.floor(h) : 0;
+    let mm = isFinite(m) && m > 0 ? Math.floor(m) : 0;
+    if (mm > 59) mm = 59;
+    return hh*60 + mm;
+  }
+
+  // ===== العرض =====
+  function refreshDisplays(){
+    monthDisplay.textContent = formatMonthText(monthEl.value);
+    dateDisplay.textContent  = formatDateDMY(dateEl.value);
+    baseDisplay.textContent  = formatTimeAMPM(baseEl.value);
+    arrivalDisplay.textContent = formatTimeAMPM(arrivalEl.value);
+    dayNameBox.textContent = arabicDayName(dateEl.value);
+  }
+  function bindPicker(displayBtn, inputEl){
+    displayBtn.addEventListener("click", () => inputEl.showPicker ? inputEl.showPicker() : inputEl.click());
+  }
+
+  // ===== Render =====
+  function render(){
+    const rows = loadRows().sort((a,b)=> a.date.localeCompare(b.date));
+    tbody.innerHTML = "";
+
+    let sum = 0;
+    let lateDays = 0;
+
+    rows.forEach((r, idx) => {
+      const late = calcLateMinutes(r.arrival, r.base, r.permMin || 0);
+      sum += late;
+      if (late > 0) lateDays++;
+
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${r.date}</td>
+        <td>${arabicDayName(r.date)}</td>
+        <td>${formatTimeAMPM(r.arrival)}</td>
+        <td>${toHM(late)}</td>
+        <td>${late}</td>
+        <td>${(r.permMin && r.permMin>0) ? toHM(r.permMin) : "—"}</td>
+        <td>
+          <div class="cell-actions">
+            <button class="mini-btn" data-edit="${idx}">تعديل</button>
+            <button class="mini-btn" data-del="${idx}">حذف</button>
+          </div>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+
+    const DAYS_UNIT_HOURS = 7;
+    const daysByHours = Math.floor((sum / 60) / DAYS_UNIT_HOURS);
+
+    totalMinEl.textContent = sum;
+    totalHMEl.textContent = toHM(sum);
+    lateDaysEl.textContent = lateDays;
+    lateDaysByHoursEl.textContent = daysByHours;
+
+    refreshDisplays();
+  }
+
+  // ===== تزامن الشهر/التاريخ =====
+  function setMonthFromDate(){
+    if (!dateEl.value) return;
+    monthEl.value = dateEl.value.slice(0,7);
+  }
+  function setDateToFirstOfMonth(){
+    const ym = monthEl.value;
+    if (!ym) return;
+    dateEl.value = ym + "-01";
+  }
+
+  // ===== Init =====
+  (function init(){
+    const today = new Date();
+    const ym = today.getFullYear() + "-" + pad2(today.getMonth()+1);
+    const ymd = today.toISOString().slice(0,10);
+
+    monthEl.value = ym;
+    dateEl.value = ymd.startsWith(ym) ? ymd : (ym + "-01");
+
+    // defaults
+    baseEl.value = localStorage.getItem(GLOBAL_BASE_KEY) || "09:30";
+    localStorage.setItem(GLOBAL_BASE_KEY, baseEl.value);
+    localStorage.setItem(GLOBAL_FLEX_KEY, "10:00");
+
+    arrivalEl.value = "10:30"; // keep visible red example aligned with your reference
+    permH.value = "";
+    permM.value = "";
+
+    bindPicker(monthDisplay, monthEl);
+    bindPicker(dateDisplay, dateEl);
+    bindPicker(baseDisplay, baseEl);
+    bindPicker(arrivalDisplay, arrivalEl);
+
+    refreshDisplays();
+    render();
+  })();
+
+  monthEl.addEventListener("change", () => { setDateToFirstOfMonth(); refreshDisplays(); render(); });
+  dateEl.addEventListener("change", () => { setMonthFromDate(); refreshDisplays(); render(); });
+
+  baseEl.addEventListener("change", () => {
+    if (!baseEl.value) baseEl.value = "09:30";
+    localStorage.setItem(GLOBAL_BASE_KEY, baseEl.value);
+    refreshDisplays();
+    render();
+  });
+  arrivalEl.addEventListener("change", () => {
+    if (!arrivalEl.value) arrivalEl.value = "10:30";
+    refreshDisplays();
+  });
+
+  // ===== إضافة/تعديل =====
+  document.getElementById("add").addEventListener("click", () => {
+    const date = dateEl.value;
+    const arrival = arrivalEl.value;
+    const base = baseEl.value;
+
+    if (!date || !arrival || !base) return alert("فضلاً أدخل التاريخ وبصمة الدخول وبداية الدوام.");
+
+    const ym = monthEl.value;
+    if (!date.startsWith(ym)) return alert("التاريخ يجب أن يكون ضمن الشهر المختار.");
+
+    const permMin = permDurationMinutes();
+    const rows = loadRows();
+
+    const payload = { date, arrival, base, permMin };
+    const i = rows.findIndex(x => x.date === date);
+    if (i >= 0) rows[i] = payload;
+    else rows.push(payload);
+
+    saveRows(rows);
+    render();
+
+    // reset optional permission
+    permH.value = "";
+    permM.value = "";
+  });
+
+  // ===== تعديل/حذف =====
+  tbody.addEventListener("click", (e) => {
+    const editBtn = e.target.closest("button[data-edit]");
+    const delBtn  = e.target.closest("button[data-del]");
+    const rows = loadRows().sort((a,b)=> a.date.localeCompare(b.date));
+
+    if (delBtn){
+      const idx = Number(delBtn.getAttribute("data-del"));
+      rows.splice(idx, 1);
+      saveRows(rows);
+      render();
+      return;
+    }
+
+    if (editBtn){
+      const idx = Number(editBtn.getAttribute("data-edit"));
+      const r = rows[idx];
+      if (!r) return;
+
+      dateEl.value = r.date;
+      setMonthFromDate();
+      arrivalEl.value = r.arrival;
+      baseEl.value = r.base || (localStorage.getItem(GLOBAL_BASE_KEY) || "09:30");
+
+      const pm = r.permMin || 0;
+      if (pm > 0){
+        permH.value = Math.floor(pm/60);
+        permM.value = pm%60;
+      } else {
+        permH.value = "";
+        permM.value = "";
+      }
+      refreshDisplays();
+    }
+  });
+
+  // ===== تصدير CSV =====
+  document.getElementById("export").addEventListener("click", () => {
+    const rows = loadRows().sort((a,b)=> a.date.localeCompare(b.date));
+    const header = ["date","day","arrival_time","base_start","perm_minutes","late_minutes","late_hhmm"];
+    const lines = [header.join(",")];
+
+    let sum = 0;
+    rows.forEach(r => {
+      const late = calcLateMinutes(r.arrival, r.base, r.permMin || 0);
+      sum += late;
+      lines.push([
+        r.date,
+        arabicDayName(r.date),
+        r.arrival,
+        r.base,
+        (r.permMin||0),
+        late,
+        toHM(late)
+      ].join(","));
+    });
+
+    const DAYS_UNIT_HOURS = 7;
+    const daysByHours = Math.floor((sum / 60) / DAYS_UNIT_HOURS);
+    lines.push(["TOTAL","","","","",sum,toHM(sum)].join(","));
+    lines.push(["DAYS_BY_7HOURS","","","","",daysByHours,""].join(","));
+
+    const csv = lines.join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "late_" + monthEl.value + ".csv";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  });
+
+  // ===== طباعة / PDF =====
+  document.getElementById("print").addEventListener("click", () => window.print());
+
+  // ===== نسخ احتياطي / استيراد =====
+  function downloadJSON(filename, dataObj){
+    const json = JSON.stringify(dataObj, null, 2);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById("backup").addEventListener("click", () => {
+    const ym = monthEl.value;
+    const rows = loadRows();
+    const payload = {
+      app: "late-calculator",
+      version: 16,
+      saved_at: new Date().toISOString(),
+      month: ym,
+      baseStartTime: baseEl.value || "09:30",
+      flexEndTime: "10:00",
+      rows
+    };
+    downloadJSON(`late_backup_${ym}.json`, payload);
+  });
+
+  const restoreFile = document.getElementById("restoreFile");
+  document.getElementById("restoreBtn").addEventListener("click", () => restoreFile.click());
+
+  restoreFile.addEventListener("change", () => {
+    const file = restoreFile.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try{
+        const data = JSON.parse(String(reader.result || "{}"));
+        if (!data || data.app !== "late-calculator" || !data.month || !Array.isArray(data.rows)){
+          alert("الملف غير صالح أو ليس نسخة من هذا البرنامج.");
+          return;
+        }
+        monthEl.value = data.month;
+        dateEl.value = data.month + "-01";
+        baseEl.value = data.baseStartTime || "09:30";
+        localStorage.setItem(GLOBAL_BASE_KEY, baseEl.value);
+        localStorage.setItem(GLOBAL_FLEX_KEY, "10:00");
+
+        localStorage.setItem(monthKey(data.month), JSON.stringify(data.rows));
+        permH.value = "";
+        permM.value = "";
+        refreshDisplays();
+        render();
+        alert("تم الاستيراد بنجاح ✅");
+      } catch {
+        alert("تعذر قراءة الملف. تأكد أنه JSON صحيح.");
+      } finally {
+        restoreFile.value = "";
+      }
+    };
+    reader.readAsText(file);
+  });
+</script>
+</body>
+</html>
